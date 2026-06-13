@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-FROM quay.io/keycloak/keycloak:26.4.7 as builder
+FROM quay.io/keycloak/keycloak:latest as builder
 LABEL org.vfeeg.vendor="Verein zur Förderung von Erneuerbaren Energiegemeinschaften"
 LABEL org.vfeeg.image.authors="eegfaktura@vfeeg.org"
 LABEL org.opencontainers.image.vendor="Verein zur Förderung von Erneuerbaren Energiegemeinschaften"
@@ -26,7 +26,7 @@ LABEL org.opencontainers.image.version="0.1.0"
 LABEL org.opencontainers.image.description="EEG Faktura keycloak auth"
 LABEL org.opencontainers.image.licenses=AGPL-3.0
 LABEL org.opencontainers.image.source=https://github.com/eegfaktura/eegfaktura-web
-LABEL org.opencontainers.image.base.name=quay.io/keycloak/keycloak:26.4.7
+LABEL org.opencontainers.image.base.name=quay.io/keycloak/keycloak:latest
 LABEL description="EEG Faktura keycloak auth"
 LABEL version="0.1.0"
 
@@ -40,7 +40,7 @@ ENV KC_DB=postgres
 WORKDIR /opt/keycloak
 RUN /opt/keycloak/bin/kc.sh build
 
-FROM quay.io/keycloak/keycloak:26.4.7
+FROM quay.io/keycloak/keycloak:latest
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 
 ENV KC_HEALTH_ENABLED=true
@@ -57,11 +57,5 @@ ENV KC_HOSTNAME_PATH="/auth"
 ENV KC_PROXY=edge
 
 
-# --optimized: nutzt die im builder-Stage via `kc.sh build` baked-in
-# Settings (KC_HEALTH_ENABLED, KC_METRICS_ENABLED, KC_DB=postgres) und
-# spart Quarkus-Augmentation beim Pod-Start. Ohne --optimized re-baut
-# Keycloak beim Start mit aktuellen ENV-Vars und ueberschreibt die
-# build-time-Settings - im Cluster fehlte dadurch der Management-Port
-# 9181, Pod-Restart-Loop wegen Probe-Failures (siehe k8s/20-keycloak.yaml).
-ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start", "--optimized"]
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start"]
 
