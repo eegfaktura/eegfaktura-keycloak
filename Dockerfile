@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-FROM quay.io/keycloak/keycloak:latest as builder
+FROM quay.io/keycloak/keycloak:26.4.7 as builder
 LABEL org.vfeeg.vendor="Verein zur Förderung von Erneuerbaren Energiegemeinschaften"
 LABEL org.vfeeg.image.authors="eegfaktura@vfeeg.org"
 LABEL org.opencontainers.image.vendor="Verein zur Förderung von Erneuerbaren Energiegemeinschaften"
@@ -26,7 +26,7 @@ LABEL org.opencontainers.image.version="0.1.0"
 LABEL org.opencontainers.image.description="EEG Faktura keycloak auth"
 LABEL org.opencontainers.image.licenses=AGPL-3.0
 LABEL org.opencontainers.image.source=https://github.com/eegfaktura/eegfaktura-web
-LABEL org.opencontainers.image.base.name=quay.io/keycloak/keycloak:latest
+LABEL org.opencontainers.image.base.name=quay.io/keycloak/keycloak:26.4.7
 LABEL description="EEG Faktura keycloak auth"
 LABEL version="0.1.0"
 
@@ -40,7 +40,7 @@ ENV KC_DB=postgres
 WORKDIR /opt/keycloak
 RUN /opt/keycloak/bin/kc.sh build
 
-FROM quay.io/keycloak/keycloak:latest
+FROM quay.io/keycloak/keycloak:26.4.7
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 
 ENV KC_HEALTH_ENABLED=true
@@ -57,5 +57,11 @@ ENV KC_HOSTNAME_PATH="/auth"
 ENV KC_PROXY=edge
 
 
-ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start"]
+# ENTRYPOINT/CMD-Split: ENTRYPOINT bleibt das kc.sh-Binary, CMD ist der
+# Default-Subcommand. K8s-Manifeste setzen `args:`, was CMD ueberschreibt
+# (nicht ENTRYPOINT). So funktioniert k8s args=["start", "--import-realm"]
+# -> kc.sh start --import-realm (statt vorher kc.sh start start --import-realm
+# das "Unknown option: 'start'" oder doppeltes-start-Augmentation triggert).
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
+CMD ["start"]
 
