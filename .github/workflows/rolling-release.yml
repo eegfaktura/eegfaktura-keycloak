@@ -90,3 +90,27 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
+
+  dispatch-deploy:
+    needs: build-and-push-image
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deploy in platform repo
+        env:
+          GH_TOKEN: ${{ secrets.PLATFORM_DEPLOY_PAT }}
+        run: |
+          PAYLOAD=$(cat <<EOF
+          {
+            "event_type": "deploy-keycloak",
+            "client_payload": {
+              "image_tag": "latest",
+              "source_sha": "${GITHUB_SHA}",
+              "source_repo": "${GITHUB_REPOSITORY}",
+              "source_ref": "${GITHUB_REF}"
+            }
+          }
+          EOF
+          )
+          echo "$PAYLOAD" | gh api repos/vfeeg-development/eegfaktura-platform/dispatches --input -
+          echo "Dispatched deploy-keycloak for sha=${GITHUB_SHA:0:8}"
