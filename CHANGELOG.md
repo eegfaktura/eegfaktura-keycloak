@@ -1,22 +1,22 @@
 # Changelog
 
-Alle nennenswerten Änderungen an **eegfaktura-keycloak (Keycloak-Image für eegfaktura)** werden hier dokumentiert.
+All notable changes to **eegfaktura-keycloak (Keycloak image for eegfaktura)** are documented here.
 
-Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
-die Versionierung an den Deployment-Release-Tags. Detail-Diffs bleiben im `git log`;
-dieser Changelog hebt die für Überblick und Betrieb relevanten Änderungen hervor.
+The format is based on [Keep a Changelog](https://keepachangelog.com/), and
+versioning follows the deployment release tags. Detailed diffs stay in the `git log`;
+this changelog highlights the changes relevant for overview and operations.
 
 ## [Unreleased]
 
 ## [1.0.0] – 2026-06-28
 
-Teil des einheitlichen Source-Build-Cutovers der eegfaktura-Suite.
+Part of the unified source-build cutover of the eegfaktura suite.
 
 ### Changed
-- Docker: ENTRYPOINT/CMD getrennt, Keycloak `26.4.7` gepinnt. (#2)
-- CI: dispatch-deploy-Bridge für Plattform-Auto-Rollout; Push in den
-  Development-Tier der Registry (ADR-0005). (#3, #4)
+- Docker: split ENTRYPOINT/CMD, pinned Keycloak `26.4.7`. (#2)
+- CI: dispatch-deploy bridge for platform auto-rollout; push to the registry's
+  development tier (ADR-0005). (#3, #4)
 
-## Frühere Releases
+## Earlier releases
 
-Vor dem 1.0.0-Cutover als Image-Tags `v0.2.0` und `v0.3.0` ausgeliefert.
+Shipped as image tags `v0.2.0` and `v0.3.0` before the 1.0.0 cutover.
