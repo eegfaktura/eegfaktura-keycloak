@@ -8,6 +8,11 @@ this changelog highlights the changes relevant for overview and operations.
 
 ## [Unreleased]
 
+## [1.0.1] – 2026-06-29
+
+### Fixed
+- Restore the custom `eegfaktura-ui` login theme that was baked into the previous prod image but missing from the source-built image, so the login screen shows the eegfaktura branding again instead of the default Keycloak theme. The realm already references `loginTheme=eegfaktura-ui`.
+
 ## [1.0.0] – 2026-06-28
 
 Part of the unified source-build cutover of the eegfaktura suite.
