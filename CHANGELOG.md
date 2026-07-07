@@ -8,6 +8,15 @@ this changelog highlights the changes relevant for overview and operations.
 
 ## [Unreleased]
 
+### Added
+- **Realm-Config-as-Code (ADR-0009):** deklarative Realm-Definition `realm/EEGFaktura.yaml`
+  (keycloak-config-cli) als versionierte Quelle der Wahrheit + Referenz-Apply-Job
+  `realm/apply-job.yaml` + `realm/README.md`. Ersetzt (als operative Quelle) den
+  Compose-`realm-export.json`-Import und den imperativen `bootstrap-realm.sh`; KC startet leer,
+  config-cli legt den Realm create+update an, `managed: no-delete`, Env-Hosts via `$(env:VAR)`.
+  **Erst-Cut** — vor Merge/Nutzung gegen einen echten Apply verifizieren (`verify-realm.sh` 6/6).
+  Bewusst offen: `admin-cli`-Built-in, Client-Secrets, Test-User in-Config-vs-Seed (siehe README).
+
 ### Changed
 - CI: Preview-Deployments (ADR-0007) — Push auf `preview/**` baut+deployt on-demand in die Dev-Zone (sha-pinned, kein `:latest`), Auto-Reset bei Branch-Delete.
 

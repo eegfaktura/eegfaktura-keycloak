@@ -1,0 +1,168 @@
+# EEGFaktura-Realm — deklarativ (keycloak-config-cli)
+#
+# Quelle der Wahrheit für den EEGFaktura-Realm. Ersetzt (als operative Quelle):
+#   - den Compose-`realm-export.json` (--import-realm)
+#   - den imperativen Patcher `bootstrap-realm.sh`
+# Angewandt idempotent (create+update) via keycloak-config-cli gegen einen
+# LAUFENDEN, zunächst LEEREN Keycloak (siehe realm/README.md + realm/apply-job.yaml).
+#
+# Env-spezifische Werte via keycloak-config-cli-Substitution `$(env:VAR)`
+# (IMPORT_VARSUBSTITUTION_ENABLED=true). Nur STRING-Felder werden substituiert;
+# zonen-variante Booleans/Ints (verifyEmail, accessTokenLifespan) sind hier auf
+# die Dev/Env-Werte gesetzt und werden für Pilot/Prod per Overlay überschrieben.
+#
+# ⚠️ ERST-CUT — vor Merge gegen einen echten config-cli-Apply verifizieren:
+#    leerer KC + Apply-Job → scripts/verify-realm.sh 6/6 (platform-Repo).
+
+realm: EEGFaktura
+enabled: true
+sslRequired: external
+loginWithEmailAllowed: true
+verifyEmail: false                 # Dev/PoC; Pilot/Prod: true (Overlay)
+accessTokenLifespan: 3600          # Dev/PoC-Sekunden; Pilot: 600 (Overlay)
+internationalizationEnabled: true
+supportedLocales:
+  - de
+  - en
+defaultLocale: de
+
+# Public-Auth-URL des Realms. MUSS die extern erreichbare Auth-Basis sein,
+# sonst schlägt der OIDC-Issuer-Match fehl (Backend/energystore panic).
+attributes:
+  frontendUrl: "$(env:AUTH_URL)"
+
+# --- Realm-Roles (Spec) ---------------------------------------------------
+# default-roles-eegfaktura + admin kommen als KC-Defaults; hier die aus der
+# Spec zusätzlich geforderten. (managed: no-delete → Defaults bleiben unberührt.)
+roles:
+  realm:
+    - name: superuser
+      description: VFEEG-übergreifender Admin
+    - name: Manager
+      description: EEG-Manager (Admin-Portal)
+    - name: user
+      description: Basis-User
+
+# --- Top-Level-Gruppen (Billing konsumiert sie als Authority) -------------
+groups:
+  - name: EEG_ADMIN
+  - name: EEG_OWNER
+  - name: EEG_USER
+
+# --- Clients --------------------------------------------------------------
+clients:
+
+  # Customer-Frontend: public/PKCE. KEIN Audience-Mapper (sonst aud=Array →
+  # Go-Backend bricht); Audience-Resolve läuft über den default roles-Scope.
+  - clientId: at.ourproject.vfeeg.app
+    enabled: true
+    publicClient: true
+    standardFlowEnabled: true
+    directAccessGrantsEnabled: false
+    fullScopeAllowed: true
+    redirectUris:
+      - "https://$(env:CUSTOMER_HOST)/*"
+    webOrigins:
+      - "https://$(env:CUSTOMER_HOST)"
+    defaultClientScopes:
+      - web-origins
+      - roles
+      - profile
+      - basic
+      - email
+    attributes:
+      access.token.lifespan: "300"
+    protocolMappers:
+      # tenant als JSON-Array — LINCHPIN der Mandantentrennung (Backend erwartet []string)
+      - name: tenantAttributeMapper
+        protocol: openid-connect
+        protocolMapper: oidc-usermodel-attribute-mapper
+        config:
+          user.attribute: tenant
+          claim.name: tenant
+          multivalued: "true"
+          aggregate.attrs: "true"
+          jsonType.label: JSON
+          access.token.claim: "true"
+          id.token.claim: "true"
+          userinfo.token.claim: "true"
+      # Group-Memberships → access_groups (Billing/Spring-Authorities)
+      - name: Group Mappers
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        config:
+          full.path: "true"
+          multivalued: "true"
+          claim.name: access_groups
+          access.token.claim: "true"
+          id.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  # Backend-API-Validation-Client: confidential, direct-grant.
+  # Kein fixes Secret hier (KC generiert) — Pilot/Prod wiren $(env:API_CLIENT_SECRET) per Overlay.
+  - clientId: at.ourproject.vfeeg.api
+    name: apiclient
+    description: Backend API validation client
+    enabled: true
+    publicClient: false
+    standardFlowEnabled: false
+    directAccessGrantsEnabled: true
+    fullScopeAllowed: true
+    defaultClientScopes:
+      - web-origins
+      - acr
+      - roles
+      - profile
+      - basic
+      - email
+    attributes:
+      access.token.lifespan: "3600"
+    protocolMappers:
+      # tenant single-valued (direct-grant-Tokens)
+      - name: tenantIds
+        protocol: openid-connect
+        protocolMapper: oidc-usermodel-attribute-mapper
+        config:
+          user.attribute: tenant
+          claim.name: tenant
+          multivalued: "false"
+          jsonType.label: String
+          access.token.claim: "true"
+          id.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  # Admin-Frontend: public. Braucht EXPLIZITEN Audience-Mapper, weil das
+  # Scala/Pekko-Admin-Backend verify-token-audience=true den eigenen Client
+  # als aud erwartet.
+  - clientId: at.ourproject.vfeeg.admin
+    enabled: true
+    publicClient: true
+    standardFlowEnabled: true
+    fullScopeAllowed: true
+    redirectUris:
+      - "https://$(env:ADMIN_HOST)/*"
+    webOrigins:
+      - "https://$(env:ADMIN_HOST)"
+    defaultClientScopes:
+      - web-origins
+      - roles
+      - profile
+      - basic
+      - email
+    protocolMappers:
+      - name: admin-audience
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config:
+          included.client.audience: at.ourproject.vfeeg.admin
+          id.token.claim: "false"
+          access.token.claim: "true"
+          introspection.token.claim: "true"
+
+# NICHT enthalten (bewusst, ERST-CUT):
+#   - admin-cli (KC-Built-in): Spec will es confidential+serviceAccounts+Secret,
+#     aber bootstrap-realm.sh fasst es NICHT an → gegen den Live-Realm verifizieren,
+#     bevor der Built-in umkonfiguriert wird (Bruchgefahr admin-backend). Braucht
+#     dann $(env:ADMIN_CLI_SECRET).
+#   - Test-User (faktura_admin/te100200_admin) + tenant-Attribute: bleiben Seed
+#     (bootstrap-poc-data.sh) — offene Frage im Konzept (§11.5: in-Config vs Seed).
