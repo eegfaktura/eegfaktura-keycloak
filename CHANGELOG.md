@@ -8,6 +8,24 @@ this changelog highlights the changes relevant for overview and operations.
 
 ## [Unreleased]
 
+### Security
+- **Keycloak 26.4.7 → 26.7.3**, schließt **CVE-2026-18963** / GHSA-4gv3-mc9p-5wqc
+  (CVSS 9.1): ein unauthentifizierter Angreifer konnte den Passwort-Reset für einen
+  beliebigen Benutzer erzwingen, ohne den E-Mail-Bestätigungslink zu benötigen, und direkt
+  neue Credentials setzen — vollständige Kontoübernahme, auch von EEG_ADMIN-Konten.
+  Unser Keycloak ist öffentlich erreichbar, der Befund war damit real und nicht theoretisch.
+
+  **Warum drei Minor-Versionen:** Das Advisory nennt 26.4.15 als Fix — diese Version gibt es
+  nur im Red-Hat-Build. Upstream (`quay.io/keycloak/keycloak`) endet die 26.4-Linie bei
+  genau unserer 26.4.7 und die 26.6-Linie bei 26.6.4, während das Advisory dort 26.6.6
+  verlangt. **26.7.2 ist die niedrigste upstream verfügbare gefixte Version**, 26.7.3 die
+  aktuelle.
+
+  **Zwischenlösung, die vorausging:** `resetPasswordAllowed=false` im Prod-Realm
+  (02.09.2026), extern verifiziert über `GET /login-actions/reset-credentials` →
+  HTTP 400 „Reset Credential not allowed". Nach dem Upgrade sollte die Funktion wieder
+  eingeschaltet werden — sie ist nur als Notnagel aus.
+
 ### Added
 - **Realm-Config-as-Code (ADR-0009):** deklarative Realm-Definition `realm/EEGFaktura.yaml`
   (keycloak-config-cli) als versionierte Quelle der Wahrheit + Referenz-Apply-Job
