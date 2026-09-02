@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-FROM quay.io/keycloak/keycloak:26.4.7 as builder
+FROM quay.io/keycloak/keycloak:26.7.3 as builder
 LABEL org.vfeeg.vendor="Verein zur Förderung von Erneuerbaren Energiegemeinschaften"
 LABEL org.vfeeg.image.authors="eegfaktura@vfeeg.org"
 LABEL org.opencontainers.image.vendor="Verein zur Förderung von Erneuerbaren Energiegemeinschaften"
@@ -40,7 +40,7 @@ ENV KC_DB=postgres
 WORKDIR /opt/keycloak
 RUN /opt/keycloak/bin/kc.sh build
 
-FROM quay.io/keycloak/keycloak:26.4.7
+FROM quay.io/keycloak/keycloak:26.7.3
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 COPY themes/ /opt/keycloak/themes/
 
