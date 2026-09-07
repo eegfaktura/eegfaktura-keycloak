@@ -8,6 +8,8 @@ this changelog highlights the changes relevant for overview and operations.
 
 ## [Unreleased]
 
+## [1.0.2] – 2026-09-07
+
 ### Security
 - **Keycloak 26.4.7 → 26.7.3**, schließt **CVE-2026-18963** / GHSA-4gv3-mc9p-5wqc
   (CVSS 9.1): ein unauthentifizierter Angreifer konnte den Passwort-Reset für einen
