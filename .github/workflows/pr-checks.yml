@@ -1,0 +1,101 @@
+# Checks on every pull request. The repository holds the Keycloak image and the realm, no code
+# with tests, so:
+#   unit — the realm files are well-formed YAML and the realm is EEGFaktura;
+#   full — the image builds, starts against PostgreSQL and turns ready, and keycloak-config-cli
+#          applies realm/EEGFaktura.yaml to it (the check the workspace stack makes).
+# The image sets legacy v1 hostname/proxy options (known-errors #5); they are cleared at the
+# start, as in the local stack. Placeholder values only — no secret is needed or used.
+# Versions fixed, each release older than 7 days (checked 2026-10-09): postgres 15.19-alpine
+# (2026-09-21), keycloak-config-cli 6.4.0-26.0.5 (2025-02-21; the repository's apply-job.yaml names
+# 6.4.0-26.0.4, which does not exist upstream, known-errors #6), both by digest. The Keycloak base
+# image is the Dockerfile's. Actions pinned by commit SHA.
+
+name: PR Checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      # yq (mikefarah) is part of the GitHub-hosted Ubuntu image.
+      - name: Realm files are well-formed
+        run: |
+          set -euo pipefail
+          for f in realm/*.yaml; do yq eval 'true' "$f" > /dev/null && echo "ok $f"; done
+          test "$(yq eval '.realm' realm/EEGFaktura.yaml)" = "EEGFaktura"
+
+  full:
+    name: Full test suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:15.19-alpine@sha256:f7d23353e1b15400d22ebe31189f4d314b87a4c129cc400c8c2d8d4ca127bf81
+        env:
+          POSTGRES_DB: keycloak
+          POSTGRES_USER: keycloak
+          POSTGRES_PASSWORD: ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U keycloak -d keycloak"
+          --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      CONFIG_CLI_IMAGE: adorsys/keycloak-config-cli:6.4.0-26.0.5@sha256:9ee0b7e134d0ff148c54c92781d2bb6d433112378b70b7200deb640505477705
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Build the image
+        run: docker build -t eegfaktura-keycloak:ci .
+
+      - name: Start Keycloak
+        run: |
+          set -euo pipefail
+          docker run -d --name keycloak --network host \
+            -e KC_DB_URL=jdbc:postgresql://127.0.0.1:5432/keycloak \
+            -e KC_DB_USERNAME=keycloak -e KC_DB_PASSWORD=ci-only \
+            -e KC_HOSTNAME=http://localhost:8080 -e KC_HOSTNAME_STRICT=false -e KC_HTTP_ENABLED=true \
+            -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=ci-only \
+            -e KC_HOSTNAME_PATH= -e KC_PROXY= -e KC_HOSTNAME_STRICT_HTTPS= -e KC_HOSTNAME_STRICT_BACKCHANNEL= \
+            eegfaktura-keycloak:ci start
+          for i in $(seq 1 90); do
+            if curl -fs http://localhost:9000/health/ready 2>/dev/null | grep -q UP; then echo "ready after $((i * 2))s"; exit 0; fi
+            sleep 2
+          done
+          echo "::error::Keycloak did not turn ready within 180 s"
+          docker logs --tail 200 keycloak; exit 1
+
+      - name: Apply the realm (keycloak-config-cli)
+        run: |
+          docker run --rm --network host \
+            -e KEYCLOAK_URL=http://localhost:8080 -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=ci-only \
+            -e KEYCLOAK_AVAILABILITYCHECK_ENABLED=true -e KEYCLOAK_AVAILABILITYCHECK_TIMEOUT=120s \
+            -e IMPORT_FILES_LOCATIONS=/config/EEGFaktura.yaml -e IMPORT_VARSUBSTITUTION_ENABLED=true \
+            -e AUTH_URL=http://localhost:8080 -e CUSTOMER_HOST=localhost:8090 -e ADMIN_HOST=localhost:8091 \
+            -e VAR=unused -e API_CLIENT_SECRET=ci-placeholder -e ADMIN_CLI_SECRET=ci-placeholder \
+            -v "$PWD/realm/EEGFaktura.yaml:/config/EEGFaktura.yaml:ro" \
+            "$CONFIG_CLI_IMAGE"
+
+      - name: Keycloak log
+        if: failure()
+        run: docker logs --tail 300 keycloak
