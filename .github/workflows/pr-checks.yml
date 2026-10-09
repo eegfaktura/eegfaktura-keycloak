@@ -38,7 +38,7 @@ jobs:
       - name: Realm files are well-formed
         run: |
           set -euo pipefail
-          for f in realm/*.yaml; do yq eval 'true' "$f" > /dev/null && echo "ok $f"; done
+          for f in realm/*.yaml; do yq eval 'true' "$f" > /dev/null; echo "ok $f"; done
           test "$(yq eval '.realm' realm/EEGFaktura.yaml)" = "EEGFaktura"
 
   full:
