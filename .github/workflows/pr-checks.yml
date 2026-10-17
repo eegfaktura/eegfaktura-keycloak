@@ -8,6 +8,8 @@
 # Versions fixed, each release older than 7 days (checked 2026-10-09): postgres 15.19-alpine
 # (2026-09-21), keycloak-config-cli 6.4.0-26.0.5 (2025-02-21, as in realm/apply-job.yaml), both by
 # digest. The Keycloak base image is the Dockerfile's. Actions pinned by commit SHA.
+# Every job keeps its output as an artifact for 30 days (test-results-<job>, known-errors-<job>),
+# for the CI report collector (vfeeg-development/eegfaktura-dev).
 
 name: PR Checks
 
@@ -37,8 +39,20 @@ jobs:
       - name: Realm files are well-formed
         run: |
           set -euo pipefail
-          for f in realm/*.yaml; do yq eval 'true' "$f" > /dev/null; echo "ok $f"; done
-          test "$(yq eval '.realm' realm/EEGFaktura.yaml)" = "EEGFaktura"
+          mkdir -p "$RUNNER_TEMP/results"
+          {
+            for f in realm/*.yaml; do yq eval 'true' "$f" > /dev/null; echo "ok $f"; done
+            test "$(yq eval '.realm' realm/EEGFaktura.yaml)" = "EEGFaktura"
+          } 2>&1 | tee "$RUNNER_TEMP/results/unit.log"
+
+      - name: Keep the test log
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results-unit
+          path: ${{ runner.temp }}/results
+          if-no-files-found: ignore
+          retention-days: 30
 
   full:
     name: Full test suite
@@ -65,27 +79,33 @@ jobs:
           persist-credentials: false
 
       - name: Build the image
-        run: docker build -t eegfaktura-keycloak:ci .
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/results"
+          docker build -t eegfaktura-keycloak:ci . 2>&1 | tee "$RUNNER_TEMP/results/build.log"
 
       - name: Start Keycloak
         run: |
           set -euo pipefail
-          docker run -d --name keycloak --network host \
-            -e KC_DB_URL=jdbc:postgresql://127.0.0.1:5432/keycloak \
-            -e KC_DB_USERNAME=keycloak -e KC_DB_PASSWORD=ci-only \
-            -e KC_HOSTNAME=http://localhost:8080 -e KC_HOSTNAME_STRICT=false -e KC_HTTP_ENABLED=true \
-            -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=ci-only \
-            -e KC_HOSTNAME_PATH= -e KC_PROXY= -e KC_HOSTNAME_STRICT_HTTPS= -e KC_HOSTNAME_STRICT_BACKCHANNEL= \
-            eegfaktura-keycloak:ci start
-          for i in $(seq 1 90); do
-            if curl -fs http://localhost:9000/health/ready 2>/dev/null | grep -q UP; then echo "ready after $((i * 2))s"; exit 0; fi
-            sleep 2
-          done
-          echo "::error::Keycloak did not turn ready within 180 s"
-          docker logs --tail 200 keycloak; exit 1
+          {
+            docker run -d --name keycloak --network host \
+              -e KC_DB_URL=jdbc:postgresql://127.0.0.1:5432/keycloak \
+              -e KC_DB_USERNAME=keycloak -e KC_DB_PASSWORD=ci-only \
+              -e KC_HOSTNAME=http://localhost:8080 -e KC_HOSTNAME_STRICT=false -e KC_HTTP_ENABLED=true \
+              -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=ci-only \
+              -e KC_HOSTNAME_PATH= -e KC_PROXY= -e KC_HOSTNAME_STRICT_HTTPS= -e KC_HOSTNAME_STRICT_BACKCHANNEL= \
+              eegfaktura-keycloak:ci start
+            for i in $(seq 1 90); do
+              if curl -fs http://localhost:9000/health/ready 2>/dev/null | grep -q UP; then echo "ready after $((i * 2))s"; exit 0; fi
+              sleep 2
+            done
+            echo "::error::Keycloak did not turn ready within 180 s"
+            docker logs --tail 200 keycloak; exit 1
+          } 2>&1 | tee "$RUNNER_TEMP/results/start.log"
 
       - name: Apply the realm (keycloak-config-cli)
         run: |
+          set -o pipefail
           docker run --rm --network host \
             -e KEYCLOAK_URL=http://localhost:8080 -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=ci-only \
             -e KEYCLOAK_AVAILABILITYCHECK_ENABLED=true -e KEYCLOAK_AVAILABILITYCHECK_TIMEOUT=120s \
@@ -93,8 +113,17 @@ jobs:
             -e AUTH_URL=http://localhost:8080 -e CUSTOMER_HOST=localhost:8090 -e ADMIN_HOST=localhost:8091 \
             -e VAR=unused -e API_CLIENT_SECRET=ci-placeholder -e ADMIN_CLI_SECRET=ci-placeholder \
             -v "$PWD/realm/EEGFaktura.yaml:/config/EEGFaktura.yaml:ro" \
-            "$CONFIG_CLI_IMAGE"
+            "$CONFIG_CLI_IMAGE" 2>&1 | tee "$RUNNER_TEMP/results/realm-apply.log"
 
       - name: Keycloak log
         if: failure()
         run: docker logs --tail 300 keycloak
+
+      - name: Keep the test logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results-full
+          path: ${{ runner.temp }}/results
+          if-no-files-found: ignore
+          retention-days: 30

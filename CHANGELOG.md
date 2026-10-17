@@ -31,6 +31,9 @@ this changelog highlights the changes relevant for overview and operations.
   leaked secrets in the new commits (Gitleaks, Trivy), vulnerable dependencies (Trivy,
   OSV-Scanner) and misconfigurations (Trivy). For now the dependency and misconfiguration
   findings are only reported (`SCAN_FAIL_ON: none`) and do not block; leaked secrets fail.
+- CI: every run keeps its scan and test results as artifacts for 30 days (`scan-*`,
+  `test-results-<job>`, `known-errors-<job>`) for a CI report collector; the secret scan keeps
+  outcomes and counts only.
 - CI builds `env/**` branches and deploys the resulting image into the matching feature
   environment (ADR-0008): a push to `env/<name>` pins this service in namespace `env-<name>`
   to that branch's `sha-…` image. Previously only the default branch, tags and `preview/**`
