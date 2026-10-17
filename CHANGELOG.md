@@ -14,8 +14,8 @@ this changelog highlights the changes relevant for overview and operations.
   it), brute-force protection (temporary lockout after 10 failures, up to 15 min) and events
   (login/logout, password, profile and credential changes, lockouts; admin events without
   content; 90 days each). Applies to Keycloaks set up from this config. The running instances were
-  not set up from it: `ADMIN_EDIT` is set there via kcadm; brute force and events still have to be
-  set there via kcadm.
+  not set up from it: the same settings were set there via kcadm
+  on 2026-10-17.
 
 ### Fixed
 - Realm config could not be applied: config-cli substitutes `$(env:…)` in comments too and

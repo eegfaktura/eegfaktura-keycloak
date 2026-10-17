@@ -23,8 +23,8 @@ Entscheidung: **ADR-0009** (platform-Repo). Treiber: **ADR-0008** (Keycloak-pro-
 - **User-Profile-Kopie:** jeder Apply überschreibt das Profil des Realms (Default von KC 26.7.4 +
   Policy); im UI ergänzte Attribute gehen verloren.
 - **Laufende Instanzen** (Prod inkl. Pilot, dev, env-billing) wurden bisher nicht mit dieser Datei
-  aufgesetzt. Dort ist `ADMIN_EDIT` seit 2026-10-17 per kcadm gesetzt; Bruteforce und Events
-  werden dort ebenfalls per kcadm gesetzt (noch ausstehend).
+  aufgesetzt. Dort sind User Profile, Bruteforce und Events seit 2026-10-17 per kcadm gesetzt
+  (gleiche Werte).
 
 ## Was es ersetzt
 | Bisher (drei driftende Artefakte) | Neu |
