@@ -4,9 +4,27 @@ Deklarative, versionierte Quelle der Wahrheit für den `EEGFaktura`-Keycloak-Rea
 angewandt via [keycloak-config-cli](https://github.com/adorsys/keycloak-config-cli).
 Entscheidung: **ADR-0009** (platform-Repo). Treiber: **ADR-0008** (Keycloak-pro-Env).
 
-> ⚠️ **ERST-CUT — noch nicht gegen einen echten Apply verifiziert.** Vor Merge/Nutzung:
-> gegen einen **leeren** KC anwenden und `scripts/verify-realm.sh` (platform-Repo) **6/6**
-> grün bekommen. Gegen den aktuellen Dev-Realm diffen (idempotenter Re-Apply ohne Drift).
+> Stand 2026-10-17: Apply gegen einen leeren Keycloak 26.7.4 lokal geprüft (config-cli
+> 6.4.0-26.0.5): Realm, Clients, User Profile, Bruteforce und Events werden angelegt, ein zweiter
+> Apply ändert nichts. **Offen:** `scripts/verify-realm.sh` (platform-Repo) 6/6 und der Diff gegen
+> den Dev-Realm — erst danach gegen einen bestehenden Realm anwenden.
+
+## User Profile, Bruteforce, Events
+- **User Profile:** `tenant` ist nicht deklariert; `unmanagedAttributePolicy: ADMIN_EDIT` → nur
+  Admins (admin-backend über die Admin-API) sehen und setzen es. Ohne die Einstellung verwirft ein
+  neuer Realm `tenant` auch beim Setzen durch den Admin. config-cli übernimmt das User Profile nur
+  als Komponente `declarative-user-profile` (ein Top-Level-Key `userProfile` wird ignoriert).
+- **Bruteforce:** temporäre Sperre nach 10 Fehlversuchen, wachsend bis 15 min, keine Dauersperre.
+- **Bruteforce, Trade-off:** wer einen Benutzernamen kennt, kann das Konto mit Fehlversuchen
+  vorübergehend sperren; zwei Fehlversuche innerhalb 1 s sperren für 60 s (Keycloak-Default).
+- **Events:** nur Anmeldung/Abmeldung, Passwort-, Profil- und Credential-Änderungen, Sperren
+  (`enabledEventTypes`); Admin-Ereignisse ohne Inhalt. Je 90 Tage (`eventsExpiration`,
+  `attributes.adminEventsExpiration`). Events enthalten Benutzer-ID und IP-Adresse.
+- **User-Profile-Kopie:** jeder Apply überschreibt das Profil des Realms (Default von KC 26.7.4 +
+  Policy); im UI ergänzte Attribute gehen verloren.
+- **Laufende Instanzen** (Prod inkl. Pilot, dev, env-billing) wurden bisher nicht mit dieser Datei
+  aufgesetzt. Dort sind User Profile, Bruteforce und Events seit 2026-10-17 per kcadm gesetzt
+  (gleiche Werte).
 
 ## Was es ersetzt
 | Bisher (drei driftende Artefakte) | Neu |
@@ -45,7 +63,8 @@ Pro `env/<name>` (ADR-0008): flache Wildcard-Hosts `<name>-…​.eegfaktura-dev
 `accessTokenLifespan`) stehen auf Dev-Werten und werden für Pilot/Prod per Overlay überschrieben.
 
 ## Sicherheits-/Design-Leitplanken
-- **`managed: no-delete`** (im Job) → config-cli löscht **keine** nicht-deklarierten Objekte.
+- **`managed: no-delete`** (im Job, inkl. `IMPORT_MANAGED_COMPONENT`) → config-cli löscht **keine**
+  nicht-deklarierten Objekte (z. B. Key-Provider).
 - **Signing-Keys sind NICHT im Scope** — bleiben pro KC-Instanz (First-Boot). Consumer-
   Verdrahtung (dynamische JWKS bzw. filestore-Pubkey-Extraktion) ist ein separater Schritt.
 - **`aud=string "account"`** muss erhalten bleiben: app-Client **ohne** Audience-Mapper,

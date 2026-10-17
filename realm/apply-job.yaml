@@ -27,7 +27,7 @@ spec:
       containers:
         - name: keycloak-config-cli
           # An die KC-MAJOR pinnen (KC 26 → passende config-cli-Line). Kein :latest.
-          image: adorsys/keycloak-config-cli:6.4.0-26.0.4
+          image: adorsys/keycloak-config-cli:6.4.0-26.0.5
           env:
             # Ziel-KC: in-cluster Service → im Env-Namespace automatisch das Env-KC.
             - {name: KEYCLOAK_URL, value: "http://eegfaktura-keycloak:8080"}
@@ -49,6 +49,7 @@ spec:
             - {name: IMPORT_MANAGED_ROLE, value: "no-delete"}
             - {name: IMPORT_MANAGED_CLIENT_SCOPE, value: "no-delete"}
             - {name: IMPORT_MANAGED_PROTOCOL_MAPPER, value: "no-delete"}
+            - {name: IMPORT_MANAGED_COMPONENT, value: "no-delete"}
             # --- Env-spezifische Substitutions-Werte ($(env:...) in der YAML) ---
             - {name: AUTH_URL,      value: "https://$(EEGF_AUTH_HOST)"}
             - {name: CUSTOMER_HOST, value: "$(EEGF_CUSTOMER_HOST)"}

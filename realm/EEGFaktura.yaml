@@ -6,13 +6,14 @@
 # Angewandt idempotent (create+update) via keycloak-config-cli gegen einen
 # LAUFENDEN, zunächst LEEREN Keycloak (siehe realm/README.md + realm/apply-job.yaml).
 #
-# Env-spezifische Werte via keycloak-config-cli-Substitution `$(env:VAR)`
+# Env-spezifische Werte via keycloak-config-cli-Substitution (Dollar + Klammer + env:NAME).
+# In Kommentaren die Syntax NICHT ausschreiben — config-cli ersetzt auch dort und bricht ab.
 # (IMPORT_VARSUBSTITUTION_ENABLED=true). Nur STRING-Felder werden substituiert;
 # zonen-variante Booleans/Ints (verifyEmail, accessTokenLifespan) sind hier auf
 # die Dev/Env-Werte gesetzt und werden für Pilot/Prod per Overlay überschrieben.
 #
-# ⚠️ ERST-CUT — vor Merge gegen einen echten config-cli-Apply verifizieren:
-#    leerer KC + Apply-Job → scripts/verify-realm.sh 6/6 (platform-Repo).
+# Apply gegen leeren KC 26.7.4 lokal geprüft (2026-10-17); offen: scripts/verify-realm.sh 6/6
+# (platform-Repo) und Diff gegen den Dev-Realm.
 
 realm: EEGFaktura
 enabled: true
@@ -26,10 +27,51 @@ supportedLocales:
   - en
 defaultLocale: de
 
+# Bruteforce-Schutz: temporäre Sperre nach 10 Fehlversuchen (wachsend bis 15 min), keine Dauersperre.
+bruteForceProtected: true
+permanentLockout: false
+failureFactor: 10
+waitIncrementSeconds: 60
+maxFailureWaitSeconds: 900
+maxDeltaTimeSeconds: 43200
+quickLoginCheckMilliSeconds: 1000
+minimumQuickLoginWaitSeconds: 60
+
+# Ereignisse speichern: nur Anmeldung, Abmeldung, Passwort-/Profil-/Credential-Änderungen und
+# Sperren (nicht jeden Token-Austausch); Admin-Änderungen ohne Inhalt. Aufbewahrung je 90 Tage
+# (Benutzer-Events: eventsExpiration, Admin-Events: attributes.adminEventsExpiration).
+# Bruteforce: Trade-off — wer einen Benutzernamen kennt, kann das Konto mit Fehlversuchen
+# vorübergehend sperren (max. 15 min); keine Dauersperre.
+eventsEnabled: true
+eventsExpiration: 7776000
+enabledEventTypes:
+  - LOGIN
+  - LOGIN_ERROR
+  - LOGOUT
+  - LOGOUT_ERROR
+  - UPDATE_PASSWORD
+  - UPDATE_PASSWORD_ERROR
+  - RESET_PASSWORD
+  - RESET_PASSWORD_ERROR
+  - SEND_RESET_PASSWORD
+  - SEND_RESET_PASSWORD_ERROR
+  - UPDATE_PROFILE
+  - UPDATE_PROFILE_ERROR
+  - UPDATE_EMAIL
+  - UPDATE_EMAIL_ERROR
+  - UPDATE_CREDENTIAL
+  - UPDATE_CREDENTIAL_ERROR
+  - REMOVE_CREDENTIAL
+  - REMOVE_CREDENTIAL_ERROR
+  - USER_DISABLED_BY_TEMPORARY_LOCKOUT
+adminEventsEnabled: true
+adminEventsDetailsEnabled: false
+
 # Public-Auth-URL des Realms. MUSS die extern erreichbare Auth-Basis sein,
 # sonst schlägt der OIDC-Issuer-Match fehl (Backend/energystore panic).
 attributes:
   frontendUrl: "$(env:AUTH_URL)"
+  adminEventsExpiration: "7776000"
 
 # --- Realm-Roles (Spec) ---------------------------------------------------
 # default-roles-eegfaktura + admin kommen als KC-Defaults; hier die aus der
@@ -99,7 +141,7 @@ clients:
           userinfo.token.claim: "true"
 
   # Backend-API-Validation-Client: confidential, direct-grant.
-  # Kein fixes Secret hier (KC generiert) — Pilot/Prod wiren $(env:API_CLIENT_SECRET) per Overlay.
+  # Kein fixes Secret hier (KC generiert) — Pilot/Prod wiren env:API_CLIENT_SECRET per Overlay.
   - clientId: at.ourproject.vfeeg.api
     name: apiclient
     description: Backend API validation client
@@ -159,10 +201,138 @@ clients:
           access.token.claim: "true"
           introspection.token.claim: "true"
 
+# --- User Profile ---------------------------------------------------------
+# `tenant` ist nicht deklariert (unmanaged). ADMIN_EDIT: nur Admins (admin-backend über die
+# Admin-API) dürfen es sehen und setzen.
+# Ohne diese Einstellung verwirft ein neuer Realm `tenant` auch beim Setzen durch den Admin.
+# Keycloak hält das User Profile als Komponente; config-cli übernimmt es nur in dieser Form.
+# Inhalt = Default-Profil von Keycloak 26.7.4 + Policy. Jeder Apply überschreibt das Profil des
+# Realms mit dieser Kopie (im UI ergänzte Attribute gehen verloren).
+components:
+  org.keycloak.userprofile.UserProfileProvider:
+    - providerId: declarative-user-profile
+      subComponents: {}
+      config:
+        kc.user.profile.config:
+          - |
+            {
+              "attributes": [
+                {
+                  "name": "username",
+                  "displayName": "${username}",
+                  "validations": {
+                    "length": {
+                      "min": 3,
+                      "max": 255
+                    },
+                    "username-prohibited-characters": {},
+                    "up-username-not-idn-homograph": {}
+                  },
+                  "permissions": {
+                    "view": [
+                      "admin",
+                      "user"
+                    ],
+                    "edit": [
+                      "admin",
+                      "user"
+                    ]
+                  },
+                  "multivalued": false
+                },
+                {
+                  "name": "email",
+                  "displayName": "${email}",
+                  "validations": {
+                    "email": {},
+                    "length": {
+                      "max": 255
+                    }
+                  },
+                  "required": {
+                    "roles": [
+                      "user"
+                    ]
+                  },
+                  "permissions": {
+                    "view": [
+                      "admin",
+                      "user"
+                    ],
+                    "edit": [
+                      "admin",
+                      "user"
+                    ]
+                  },
+                  "multivalued": false
+                },
+                {
+                  "name": "firstName",
+                  "displayName": "${firstName}",
+                  "validations": {
+                    "length": {
+                      "max": 255
+                    },
+                    "person-name-prohibited-characters": {}
+                  },
+                  "required": {
+                    "roles": [
+                      "user"
+                    ]
+                  },
+                  "permissions": {
+                    "view": [
+                      "admin",
+                      "user"
+                    ],
+                    "edit": [
+                      "admin",
+                      "user"
+                    ]
+                  },
+                  "multivalued": false
+                },
+                {
+                  "name": "lastName",
+                  "displayName": "${lastName}",
+                  "validations": {
+                    "length": {
+                      "max": 255
+                    },
+                    "person-name-prohibited-characters": {}
+                  },
+                  "required": {
+                    "roles": [
+                      "user"
+                    ]
+                  },
+                  "permissions": {
+                    "view": [
+                      "admin",
+                      "user"
+                    ],
+                    "edit": [
+                      "admin",
+                      "user"
+                    ]
+                  },
+                  "multivalued": false
+                }
+              ],
+              "groups": [
+                {
+                  "name": "user-metadata",
+                  "displayHeader": "User metadata",
+                  "displayDescription": "Attributes, which refer to user metadata"
+                }
+              ],
+              "unmanagedAttributePolicy": "ADMIN_EDIT"
+            }
+
 # NICHT enthalten (bewusst, ERST-CUT):
 #   - admin-cli (KC-Built-in): Spec will es confidential+serviceAccounts+Secret,
 #     aber bootstrap-realm.sh fasst es NICHT an → gegen den Live-Realm verifizieren,
 #     bevor der Built-in umkonfiguriert wird (Bruchgefahr admin-backend). Braucht
-#     dann $(env:ADMIN_CLI_SECRET).
+#     dann env:ADMIN_CLI_SECRET.
 #   - Test-User (faktura_admin/te100200_admin) + tenant-Attribute: bleiben Seed
 #     (bootstrap-poc-data.sh) — offene Frage im Konzept (§11.5: in-Config vs Seed).
