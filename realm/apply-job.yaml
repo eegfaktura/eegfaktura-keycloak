@@ -49,6 +49,7 @@ spec:
             - {name: IMPORT_MANAGED_ROLE, value: "no-delete"}
             - {name: IMPORT_MANAGED_CLIENT_SCOPE, value: "no-delete"}
             - {name: IMPORT_MANAGED_PROTOCOL_MAPPER, value: "no-delete"}
+            - {name: IMPORT_MANAGED_COMPONENT, value: "no-delete"}
             # --- Env-spezifische Substitutions-Werte ($(env:...) in der YAML) ---
             - {name: AUTH_URL,      value: "https://$(EEGF_AUTH_HOST)"}
             - {name: CUSTOMER_HOST, value: "$(EEGF_CUSTOMER_HOST)"}

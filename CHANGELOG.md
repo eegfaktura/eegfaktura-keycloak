@@ -11,14 +11,18 @@ this changelog highlights the changes relevant for overview and operations.
 ### Changed
 - Realm config (`realm/EEGFaktura.yaml`): user profile with `unmanagedAttributePolicy: ADMIN_EDIT`
   (only admins see and set `tenant`; without it a new realm drops `tenant` even when an admin sets
-  it), brute-force protection (temporary lockout after 10 failures) and login/admin events
-  (90 days, admin events without content). Applies to Keycloaks set up from this config; existing
-  instances are configured with kcadm.
+  it), brute-force protection (temporary lockout after 10 failures, up to 15 min) and events
+  (login/logout, password, profile and credential changes, lockouts; admin events without
+  content; 90 days each). Applies to Keycloaks set up from this config. The running instances were
+  not set up from it: `ADMIN_EDIT` is set there via kcadm; brute force and events still have to be
+  set there via kcadm.
 
 ### Fixed
 - Realm config could not be applied: config-cli substitutes `$(env:…)` in comments too and
   aborted on the placeholder in the header comment. `apply-job.yaml` referenced a config-cli image
   tag that does not exist (`6.4.0-26.0.4` → `6.4.0-26.0.5`).
+- `apply-job.yaml` now also sets `IMPORT_MANAGED_COMPONENT=no-delete`, so an apply never deletes
+  undeclared components such as key providers.
 
 ### Added
 - CI builds `env/**` branches and deploys the resulting image into the matching feature
