@@ -8,6 +8,19 @@ Entscheidung: **ADR-0009** (platform-Repo). Treiber: **ADR-0008** (Keycloak-pro-
 > gegen einen **leeren** KC anwenden und `scripts/verify-realm.sh` (platform-Repo) **6/6**
 > grün bekommen. Gegen den aktuellen Dev-Realm diffen (idempotenter Re-Apply ohne Drift).
 
+> Stand 2026-10-17: Apply gegen einen leeren Keycloak 26.7.4 lokal geprüft (config-cli
+> 6.4.0-26.0.5): Realm, Clients, User Profile, Bruteforce und Events werden angelegt, ein zweiter
+> Apply ändert nichts. `verify-realm.sh` und der Diff gegen den Dev-Realm stehen weiter aus.
+
+## User Profile, Bruteforce, Events
+- **User Profile:** `tenant` ist nicht deklariert; `unmanagedAttributePolicy: ADMIN_EDIT` → nur
+  Admins (admin-backend über die Admin-API) sehen und setzen es. Ohne die Einstellung verwirft ein
+  neuer Realm `tenant` auch beim Setzen durch den Admin. config-cli übernimmt das User Profile nur
+  als Komponente `declarative-user-profile` (ein Top-Level-Key `userProfile` wird ignoriert).
+- **Bruteforce:** temporäre Sperre nach 10 Fehlversuchen, wachsend bis 15 min, keine Dauersperre.
+- **Events:** Benutzer- und Admin-Ereignisse (Admin ohne Inhalt), 90 Tage Aufbewahrung.
+- Bestehende Keycloaks (Prod, dev, env-*) werden nicht per config-cli verwaltet → dort per kcadm setzen.
+
 ## Was es ersetzt
 | Bisher (drei driftende Artefakte) | Neu |
 |---|---|

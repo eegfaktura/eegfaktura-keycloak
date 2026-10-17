@@ -27,7 +27,7 @@ spec:
       containers:
         - name: keycloak-config-cli
           # An die KC-MAJOR pinnen (KC 26 → passende config-cli-Line). Kein :latest.
-          image: adorsys/keycloak-config-cli:6.4.0-26.0.4
+          image: adorsys/keycloak-config-cli:6.4.0-26.0.5
           env:
             # Ziel-KC: in-cluster Service → im Env-Namespace automatisch das Env-KC.
             - {name: KEYCLOAK_URL, value: "http://eegfaktura-keycloak:8080"}
