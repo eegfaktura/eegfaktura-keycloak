@@ -26,7 +26,7 @@ this changelog highlights the changes relevant for overview and operations.
 - Image: removed the hostname/proxy v1 variables (`KC_HOSTNAME_PATH=/auth`, `KC_HOSTNAME_STRICT_HTTPS`,
   `KC_HOSTNAME_STRICT_BACKCHANNEL`, `KC_PROXY=edge`, `PROXY_ADDRESS_FORWARDING`). Keycloak 26 ignores
   them and only logged the "Hostname v1 options … still in use" warning: no `/auth` path, no
-  forwarded headers trusted. No behaviour change; deployments behind a proxy set
+  forwarded headers trusted. No behaviour change (Keycloak 26 already ignored them); prod, pilot, dev and `compose.production.yaml` set
   `KC_PROXY_HEADERS` themselves. CI (`pr-checks.yml`) no longer clears them, so it tests the image
   default.
 - Image labels: they sat in the builder stage and never reached the image; now in the final stage,
