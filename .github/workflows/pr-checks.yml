@@ -3,8 +3,8 @@
 #   unit — the realm files are well-formed YAML and the realm is EEGFaktura;
 #   full — the image builds, starts against PostgreSQL and turns ready, and keycloak-config-cli
 #          applies realm/EEGFaktura.yaml to it (the check the workspace stack makes).
-# The image sets legacy v1 hostname/proxy options; they are cleared at the start, as in the local
-# stack. Placeholder values only — no secret is needed or used.
+# Keycloak starts with the image's own defaults plus what every deployment sets (DB, hostname,
+# admin). Placeholder values only — no secret is needed or used.
 # Versions fixed, each release older than 7 days (checked 2026-10-09): postgres 15.19-alpine
 # (2026-09-21), keycloak-config-cli 6.4.0-26.0.5 (2025-02-21, as in realm/apply-job.yaml), both by
 # digest. The Keycloak base image is the Dockerfile's. Actions pinned by commit SHA.
@@ -93,7 +93,6 @@ jobs:
               -e KC_DB_USERNAME=keycloak -e KC_DB_PASSWORD=ci-only \
               -e KC_HOSTNAME=http://localhost:8080 -e KC_HOSTNAME_STRICT=false -e KC_HTTP_ENABLED=true \
               -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=ci-only \
-              -e KC_HOSTNAME_PATH= -e KC_PROXY= -e KC_HOSTNAME_STRICT_HTTPS= -e KC_HOSTNAME_STRICT_BACKCHANNEL= \
               eegfaktura-keycloak:ci start
             for i in $(seq 1 90); do
               if curl -fs http://localhost:9000/health/ready 2>/dev/null | grep -q UP; then echo "ready after $((i * 2))s"; exit 0; fi

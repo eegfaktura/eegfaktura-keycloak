@@ -50,12 +50,7 @@ ENV KC_DB=postgres
 ENV KC_DB_URL=jdbc:postgresql://eegfaktura-postgresql:5432/keycloak
 ENV KEYCLOAK_ADMIN=admin
 ENV KC_HOSTNAME_STRICT=false
-ENV KC_HOSTNAME_STRICT_HTTPS=false
 ENV KC_HTTP_ENABLED=true
-ENV PROXY_ADDRESS_FORWARDING=true
-ENV KC_HOSTNAME_STRICT_BACKCHANNEL=false
-ENV KC_HOSTNAME_PATH="/auth"
-ENV KC_PROXY=edge
 
 
 # ENTRYPOINT/CMD-Split: ENTRYPOINT bleibt das kc.sh-Binary, CMD ist der

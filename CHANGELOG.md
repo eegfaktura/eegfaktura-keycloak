@@ -23,6 +23,12 @@ this changelog highlights the changes relevant for overview and operations.
   tag that does not exist (`6.4.0-26.0.4` → `6.4.0-26.0.5`).
 - `apply-job.yaml` now also sets `IMPORT_MANAGED_COMPONENT=no-delete`, so an apply never deletes
   undeclared components such as key providers.
+- Image: removed the hostname/proxy v1 variables (`KC_HOSTNAME_PATH=/auth`, `KC_HOSTNAME_STRICT_HTTPS`,
+  `KC_HOSTNAME_STRICT_BACKCHANNEL`, `KC_PROXY=edge`, `PROXY_ADDRESS_FORWARDING`). Keycloak 26 ignores
+  them and only logged the "Hostname v1 options … still in use" warning: no `/auth` path, no
+  forwarded headers trusted. No behaviour change; deployments behind a proxy set
+  `KC_PROXY_HEADERS` themselves. CI (`pr-checks.yml`) no longer clears them, so it tests the image
+  default.
 
 ### Added
 - CI: `pr-checks.yml` on every pull request: the realm files parse (unit); the image builds,
