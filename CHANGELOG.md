@@ -8,6 +8,23 @@ this changelog highlights the changes relevant for overview and operations.
 
 ## [Unreleased]
 
+## [1.0.3] – 2026-10-21
+
+### Added
+- CI: `pr-checks.yml` on every pull request: the realm files parse (unit); the image builds,
+  starts against PostgreSQL and keycloak-config-cli applies the realm (full).
+- CI: `security-scan.yml` on every pull request, on pushes to the default branch and weekly:
+  leaked secrets in the new commits (Gitleaks, Trivy), vulnerable dependencies (Trivy,
+  OSV-Scanner) and misconfigurations (Trivy). For now the dependency and misconfiguration
+  findings are only reported (`SCAN_FAIL_ON: none`) and do not block; leaked secrets fail.
+- CI: every run keeps its scan and test results as artifacts for 30 days (`scan-*`,
+  `test-results-<job>`, `known-errors-<job>`) for a CI report collector; the secret scan keeps
+  outcomes and counts only.
+- CI builds `env/**` branches and deploys the resulting image into the matching feature
+  environment (ADR-0008): a push to `env/<name>` pins this service in namespace `env-<name>`
+  to that branch's `sha-…` image. Previously only the default branch, tags and `preview/**`
+  produced an image at all. The environment itself is still provisioned manually.
+
 ### Changed
 - Realm config (`realm/EEGFaktura.yaml`): user profile with `unmanagedAttributePolicy: ADMIN_EDIT`
   (only admins see and set `tenant`; without it a new realm drops `tenant` even when an admin sets
@@ -35,21 +52,6 @@ this changelog highlights the changes relevant for overview and operations.
   `org.opencontainers.image.version`. `FROM … AS` in upper case (BuildKit `FromAsCasing`).
 - Image: `USER 1000` set explicitly in the final stage (Trivy DS-0002). The base image already ran
   as uid 1000, so the runtime user is unchanged.
-
-### Added
-- CI: `pr-checks.yml` on every pull request: the realm files parse (unit); the image builds,
-  starts against PostgreSQL and keycloak-config-cli applies the realm (full).
-- CI: `security-scan.yml` on every pull request, on pushes to the default branch and weekly:
-  leaked secrets in the new commits (Gitleaks, Trivy), vulnerable dependencies (Trivy,
-  OSV-Scanner) and misconfigurations (Trivy). For now the dependency and misconfiguration
-  findings are only reported (`SCAN_FAIL_ON: none`) and do not block; leaked secrets fail.
-- CI: every run keeps its scan and test results as artifacts for 30 days (`scan-*`,
-  `test-results-<job>`, `known-errors-<job>`) for a CI report collector; the secret scan keeps
-  outcomes and counts only.
-- CI builds `env/**` branches and deploys the resulting image into the matching feature
-  environment (ADR-0008): a push to `env/<name>` pins this service in namespace `env-<name>`
-  to that branch's `sha-…` image. Previously only the default branch, tags and `preview/**`
-  produced an image at all. The environment itself is still provisioned manually.
 
 ## [1.0.2] – 2026-09-07
 
