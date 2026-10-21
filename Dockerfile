@@ -50,6 +50,9 @@ ENV KEYCLOAK_ADMIN=admin
 ENV KC_HOSTNAME_STRICT=false
 ENV KC_HTTP_ENABLED=true
 
+# The base image already runs as the keycloak user (uid 1000, group root); stated explicitly so
+# the final stage never runs as root by accident.
+USER 1000
 
 # ENTRYPOINT/CMD-Split: ENTRYPOINT bleibt das kc.sh-Binary, CMD ist der
 # Default-Subcommand. K8s-Manifeste setzen `args:`, was CMD ueberschreibt

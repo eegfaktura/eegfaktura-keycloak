@@ -33,6 +33,8 @@ this changelog highlights the changes relevant for overview and operations.
   with `base.name` on the actual base (26.7.4) and `image.source` on this repository instead of
   eegfaktura-web. The fixed `version` labels ("0.1.0") are gone; the release workflow sets
   `org.opencontainers.image.version`. `FROM … AS` in upper case (BuildKit `FromAsCasing`).
+- Image: `USER 1000` set explicitly in the final stage (Trivy DS-0002). The base image already ran
+  as uid 1000, so the runtime user is unchanged.
 
 ### Added
 - CI: `pr-checks.yml` on every pull request: the realm files parse (unit); the image builds,
