@@ -23,6 +23,18 @@ this changelog highlights the changes relevant for overview and operations.
   tag that does not exist (`6.4.0-26.0.4` → `6.4.0-26.0.5`).
 - `apply-job.yaml` now also sets `IMPORT_MANAGED_COMPONENT=no-delete`, so an apply never deletes
   undeclared components such as key providers.
+- Image: removed the hostname/proxy v1 variables (`KC_HOSTNAME_PATH=/auth`, `KC_HOSTNAME_STRICT_HTTPS`,
+  `KC_HOSTNAME_STRICT_BACKCHANNEL`, `KC_PROXY=edge`, `PROXY_ADDRESS_FORWARDING`). Keycloak 26 ignores
+  them and only logged the "Hostname v1 options … still in use" warning: no `/auth` path, no
+  forwarded headers trusted. No behaviour change (Keycloak 26 already ignored them); prod, pilot, dev and `compose.production.yaml` set
+  `KC_PROXY_HEADERS` themselves. CI (`pr-checks.yml`) no longer clears them, so it tests the image
+  default.
+- Image labels: they sat in the builder stage and never reached the image; now in the final stage,
+  with `base.name` on the actual base (26.7.4) and `image.source` on this repository instead of
+  eegfaktura-web. The fixed `version` labels ("0.1.0") are gone; the release workflow sets
+  `org.opencontainers.image.version`. `FROM … AS` in upper case (BuildKit `FromAsCasing`).
+- Image: `USER 1000` set explicitly in the final stage (Trivy DS-0002). The base image already ran
+  as uid 1000, so the runtime user is unchanged.
 
 ### Added
 - CI: `pr-checks.yml` on every pull request: the realm files parse (unit); the image builds,
