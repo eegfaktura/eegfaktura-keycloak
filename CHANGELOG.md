@@ -29,6 +29,10 @@ this changelog highlights the changes relevant for overview and operations.
   forwarded headers trusted. No behaviour change; deployments behind a proxy set
   `KC_PROXY_HEADERS` themselves. CI (`pr-checks.yml`) no longer clears them, so it tests the image
   default.
+- Image labels: they sat in the builder stage and never reached the image; now in the final stage,
+  with `base.name` on the actual base (26.7.4) and `image.source` on this repository instead of
+  eegfaktura-web. The fixed `version` labels ("0.1.0") are gone; the release workflow sets
+  `org.opencontainers.image.version`. `FROM … AS` in upper case (BuildKit `FromAsCasing`).
 
 ### Added
 - CI: `pr-checks.yml` on every pull request: the realm files parse (unit); the image builds,

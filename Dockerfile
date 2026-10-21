@@ -16,19 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-FROM quay.io/keycloak/keycloak:26.7.4 as builder
-LABEL org.vfeeg.vendor="Verein zur Förderung von Erneuerbaren Energiegemeinschaften"
-LABEL org.vfeeg.image.authors="eegfaktura@vfeeg.org"
-LABEL org.opencontainers.image.vendor="Verein zur Förderung von Erneuerbaren Energiegemeinschaften"
-LABEL org.opencontainers.image.authors="eegfaktura@vfeeg.org"
-LABEL org.opencontainers.image.title="eegfaktura-keycloak"
-LABEL org.opencontainers.image.version="0.1.0"
-LABEL org.opencontainers.image.description="EEG Faktura keycloak auth"
-LABEL org.opencontainers.image.licenses=AGPL-3.0
-LABEL org.opencontainers.image.source=https://github.com/eegfaktura/eegfaktura-web
-LABEL org.opencontainers.image.base.name=quay.io/keycloak/keycloak:26.7.3
-LABEL description="EEG Faktura keycloak auth"
-LABEL version="0.1.0"
+FROM quay.io/keycloak/keycloak:26.7.4 AS builder
 
 # Enable health and metrics support
 ENV KC_HEALTH_ENABLED=true
@@ -41,6 +29,16 @@ WORKDIR /opt/keycloak
 RUN /opt/keycloak/bin/kc.sh build
 
 FROM quay.io/keycloak/keycloak:26.7.4
+LABEL org.vfeeg.vendor="Verein zur Förderung von Erneuerbaren Energiegemeinschaften"
+LABEL org.vfeeg.image.authors="eegfaktura@vfeeg.org"
+LABEL org.opencontainers.image.vendor="Verein zur Förderung von Erneuerbaren Energiegemeinschaften"
+LABEL org.opencontainers.image.authors="eegfaktura@vfeeg.org"
+LABEL org.opencontainers.image.title="eegfaktura-keycloak"
+LABEL org.opencontainers.image.description="EEG Faktura keycloak auth"
+LABEL org.opencontainers.image.licenses=AGPL-3.0
+LABEL org.opencontainers.image.source=https://github.com/eegfaktura/eegfaktura-keycloak
+LABEL org.opencontainers.image.base.name=quay.io/keycloak/keycloak:26.7.4
+LABEL description="EEG Faktura keycloak auth"
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 COPY themes/ /opt/keycloak/themes/
 
