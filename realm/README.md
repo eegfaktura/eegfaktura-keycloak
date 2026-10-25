@@ -26,6 +26,20 @@ Entscheidung: **ADR-0009** (platform-Repo). Treiber: **ADR-0008** (Keycloak-pro-
   aufgesetzt. Dort sind User Profile, Bruteforce und Events seit 2026-10-17 per kcadm gesetzt
   (gleiche Werte).
 
+## Mandanten und Gruppen
+- **`tenant`-Kodierung:** ein JSON-String **pro Wert** (`"RC100100"`, `"GC106668"`), nie ein
+  JSON-Array-Text in einem Wert. Der App-Client (`tenantAttributeMapper`) und der API-Client
+  (`tenantIds`) mappen ihn gleich: multivalued, aggregiert, JSON → flaches Array
+  `["RC100100","GC106668"]`, das jeder Service als `[]string` liest (keycloak #3, 261005-ca1).
+- **`access_groups`:** beide Clients tragen den Group-Mapper (voller Pfad).
+- **Pro-EEG-Gruppen** `/eeg/<RC>/<ROLLE>` (`EEG_ADMIN`, `EEG_MANAGER`, `MEMBER`) werden von
+  Operator-Werkzeugen über die Admin-API angelegt, **nicht** von dieser Datei — config-cli wendet
+  sie bei jedem Apply an, und ob es unter `no-delete` nicht deklarierte Untergruppen beschneidet,
+  ist nicht geprüft. Die globalen Gruppen `EEG_ADMIN/OWNER/USER` bleiben, solange Legacy-Services sie lesen.
+- **Realm-Rolle `api_management`:** Betrieb des API-Gateways (Management-API, Dashboard), keine EEG-Daten.
+- **Passwort-Richtlinie:** `length(12) and notUsername(undefined)` (Runbook-Wert); der Live-Wert der
+  Produktion entscheidet.
+
 ## Was es ersetzt
 | Bisher (drei driftende Artefakte) | Neu |
 |---|---|

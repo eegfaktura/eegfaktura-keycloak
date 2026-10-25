@@ -8,6 +8,18 @@ this changelog highlights the changes relevant for overview and operations.
 
 ## [Unreleased]
 
+### Added
+- Realm config: realm role `api_management` (API gateway operation: management API and dashboard,
+  no community data).
+- Realm config: password policy `length(12) and notUsername(undefined)`.
+- Realm config: the api client `at.ourproject.vfeeg.api` gets the group mapper (`access_groups`,
+  full path), as the app client has.
+
+### Changed
+- Realm config: the api client's `tenantIds` mapper is multivalued, aggregated and JSON-typed like
+  the app client's, so both clients emit `tenant` as one flat string array (known error #3,
+  backend 261005-ca14). README: section *Mandanten und Gruppen* (the tenant encoding, per-EEG groups).
+
 ## [1.0.3] – 2026-10-21
 
 ### Added
