@@ -65,6 +65,9 @@ this changelog highlights the changes relevant for overview and operations.
 - Image: `USER 1000` set explicitly in the final stage (Trivy DS-0002). The base image already ran
   as uid 1000, so the runtime user is unchanged.
 
+### CI
+- `rolling-release.yml`: no image build on a draft pull request — it runs when the pull request is marked ready for review (`ready_for_review`) and on every later push to it; `pr-checks.yml` still checks drafts. Pushes, tags and the deploy dispatch are unchanged.
+
 ## [1.0.2] – 2026-09-07
 
 ### Security
