@@ -37,8 +37,12 @@ maxDeltaTimeSeconds: 43200
 quickLoginCheckMilliSeconds: 1000
 minimumQuickLoginWaitSeconds: 60
 
-# Passwort-Richtlinie: Wert aus dem Prod-Security-Runbook (keycloak 261005-ca2). Der Live-Wert
-# der Produktion entscheidet (Operator-Prüfung); der lokale Stack lockert sie im Supplement.
+# Passwort-Richtlinie: Wert aus dem Prod-Security-Runbook (keycloak 261005-ca2); der lokale Stack
+# lockert sie im Supplement. config-cli überschreibt beim Apply die Realm-Felder dieser Datei
+# (auch failureFactor, eventsExpiration): vor jedem Apply auf Pilot/Prod gegen den Live-Realm
+# vergleichen. Ein Entfernen des Schlüssels setzt nichts zurück — ein Rollback setzt
+# passwordPolicy ausdrücklich. Erst anwenden, wenn das Admin-Formular die Länge prüft
+# (admin-backend legt sonst Konten ohne Passwort an).
 passwordPolicy: "length(12) and notUsername(undefined)"
 
 # Ereignisse speichern: nur Anmeldung, Abmeldung, Passwort-/Profil-/Credential-Änderungen und

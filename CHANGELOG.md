@@ -19,6 +19,13 @@ this changelog highlights the changes relevant for overview and operations.
 - Realm config: the api client's `tenantIds` mapper is multivalued, aggregated and JSON-typed like
   the app client's, so both clients emit `tenant` as one flat string array (known error #3,
   backend 261005-ca14). README: section *Mandanten und Gruppen* (the tenant encoding, per-EEG groups).
+- README and the realm file's comment: before any apply to pilot or production, diff against the live realm —
+  keycloak-config-cli overwrites the realm fields of this file (`passwordPolicy`, `failureFactor`,
+  `eventsExpiration`), a removed key resets nothing, a rollback sets `passwordPolicy` explicitly; apply
+  `length(12)` only once the admin form asks for 12 characters.
+
+### CI
+- `rolling-release.yml`: no image build on a draft pull request — it runs when the pull request is marked ready for review (`ready_for_review`) and on every later push to it; `pr-checks.yml` still checks drafts. Pushes, tags and the deploy dispatch are unchanged.
 
 ## [1.0.3] – 2026-10-21
 
@@ -64,9 +71,6 @@ this changelog highlights the changes relevant for overview and operations.
   `org.opencontainers.image.version`. `FROM … AS` in upper case (BuildKit `FromAsCasing`).
 - Image: `USER 1000` set explicitly in the final stage (Trivy DS-0002). The base image already ran
   as uid 1000, so the runtime user is unchanged.
-
-### CI
-- `rolling-release.yml`: no image build on a draft pull request — it runs when the pull request is marked ready for review (`ready_for_review`) and on every later push to it; `pr-checks.yml` still checks drafts. Pushes, tags and the deploy dispatch are unchanged.
 
 ## [1.0.2] – 2026-09-07
 

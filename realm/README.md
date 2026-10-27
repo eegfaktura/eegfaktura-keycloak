@@ -33,12 +33,19 @@ Entscheidung: **ADR-0009** (platform-Repo). Treiber: **ADR-0008** (Keycloak-pro-
   `["RC100100","GC106668"]`, das jeder Service als `[]string` liest (keycloak #3, 261005-ca1).
 - **`access_groups`:** beide Clients tragen den Group-Mapper (voller Pfad).
 - **Pro-EEG-Gruppen** `/eeg/<RC>/<ROLLE>` (`EEG_ADMIN`, `EEG_MANAGER`, `MEMBER`) werden von
-  Operator-Werkzeugen über die Admin-API angelegt, **nicht** von dieser Datei — config-cli wendet
-  sie bei jedem Apply an, und ob es unter `no-delete` nicht deklarierte Untergruppen beschneidet,
-  ist nicht geprüft. Die globalen Gruppen `EEG_ADMIN/OWNER/USER` bleiben, solange Legacy-Services sie lesen.
+  Operator-Werkzeugen über die Admin-API angelegt, **nicht** von dieser Datei (`/eeg` ist nicht
+  deklariert). config-cli wendet diese Datei bei jedem Apply an; ob es unter `no-delete` nicht
+  deklarierte Untergruppen beschneidet, ist nicht geprüft. Die globalen Gruppen `EEG_ADMIN/OWNER/USER` bleiben, solange Legacy-Services sie lesen.
 - **Realm-Rolle `api_management`:** Betrieb des API-Gateways (Management-API, Dashboard), keine EEG-Daten.
-- **Passwort-Richtlinie:** `length(12) and notUsername(undefined)` (Runbook-Wert); der Live-Wert der
-  Produktion entscheidet.
+- **Passwort-Richtlinie:** `length(12) and notUsername(undefined)` (Runbook-Wert).
+- **Vor jedem Apply auf Pilot/Prod:** gegen den Live-Realm vergleichen. config-cli überschreibt die
+  Realm-Felder dieser Datei — `passwordPolicy`, aber auch `failureFactor` und `eventsExpiration`,
+  wo die Datei von Prod abweicht. Ein entfernter Schlüssel setzt nichts zurück: ein Rollback setzt
+  `passwordPolicy` ausdrücklich auf den alten Wert.
+- **`length(12)` und die Admin-Registrierung:** admin-backend legt den Benutzer an und setzt das
+  Passwort danach; lehnt Keycloak ein kürzeres Passwort ab, bleibt ein Konto ohne Passwort und
+  ohne Gruppen zurück. Die Richtlinie erst anwenden, wenn das Admin-Formular mindestens 12 Zeichen
+  verlangt; bestehende Benutzer betrifft sie nicht (geprüft wird nur beim Setzen).
 
 ## Was es ersetzt
 | Bisher (drei driftende Artefakte) | Neu |
