@@ -37,6 +37,14 @@ maxDeltaTimeSeconds: 43200
 quickLoginCheckMilliSeconds: 1000
 minimumQuickLoginWaitSeconds: 60
 
+# Passwort-Richtlinie: Wert aus dem Prod-Security-Runbook (keycloak 261005-ca2); der lokale Stack
+# lockert sie im Supplement. config-cli überschreibt beim Apply die Realm-Felder dieser Datei
+# (auch failureFactor, eventsExpiration): vor jedem Apply auf Pilot/Prod gegen den Live-Realm
+# vergleichen. Ein Entfernen des Schlüssels setzt nichts zurück — ein Rollback setzt
+# passwordPolicy ausdrücklich. Erst anwenden, wenn das Admin-Formular die Länge prüft
+# (admin-backend legt sonst Konten ohne Passwort an).
+passwordPolicy: "length(12) and notUsername(undefined)"
+
 # Ereignisse speichern: nur Anmeldung, Abmeldung, Passwort-/Profil-/Credential-Änderungen und
 # Sperren (nicht jeden Token-Austausch); Admin-Änderungen ohne Inhalt. Aufbewahrung je 90 Tage
 # (Benutzer-Events: eventsExpiration, Admin-Events: attributes.adminEventsExpiration).
@@ -84,6 +92,8 @@ roles:
       description: EEG-Manager (Admin-Portal)
     - name: user
       description: Basis-User
+    - name: api_management
+      description: "Gateway-Betrieb: Management-API und Dashboard, keine EEG-Daten (V2-35)"
 
 # --- Top-Level-Gruppen (Billing konsumiert sie als Authority) -------------
 groups:
@@ -160,15 +170,29 @@ clients:
     attributes:
       access.token.lifespan: "3600"
     protocolMappers:
-      # tenant single-valued (direct-grant-Tokens)
+      # Eine tenant-Form auf beiden Clients (keycloak #3, backend 261005-ca14): multivalued +
+      # aggregiert + JSON wie beim App-Client → flaches Array. Name tenantIds bleibt (config-cli
+      # gleicht Mapper per Name ab; ein neuer Name ließe den alten daneben stehen).
       - name: tenantIds
         protocol: openid-connect
         protocolMapper: oidc-usermodel-attribute-mapper
         config:
           user.attribute: tenant
           claim.name: tenant
-          multivalued: "false"
-          jsonType.label: String
+          multivalued: "true"
+          aggregate.attrs: "true"
+          jsonType.label: JSON
+          access.token.claim: "true"
+          id.token.claim: "true"
+          userinfo.token.claim: "true"
+      # Group-Memberships → access_groups, wie beim App-Client
+      - name: Group Mappers
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        config:
+          full.path: "true"
+          multivalued: "true"
+          claim.name: access_groups
           access.token.claim: "true"
           id.token.claim: "true"
           userinfo.token.claim: "true"
