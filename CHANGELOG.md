@@ -8,6 +8,13 @@ this changelog highlights the changes relevant for overview and operations.
 
 ## [Unreleased]
 
+### Security
+- Keycloak base image `quay.io/keycloak/keycloak:26.7.4` → `26.7.5` (release and image 2026-09-30): Keycloak
+  security fixes of 26.7.5 and the libraries bcprov 1.85, netty-handler 4.1.137, freemarker 2.3.35 and
+  jackson 2.21.7. Image scan (Trivy 0.75.0): 5 CRITICAL / 22 HIGH → 1 CRITICAL / 10 HIGH (the rest is in the
+  UBI base and in guava/mssql-jdbc). Realm file and theme unchanged; breaking changes of 26.7.5 (client policy
+  source groups by full path, disabled clients not in `aud`) do not touch `realm/EEGFaktura.yaml`.
+
 ## [1.0.3] – 2026-10-21
 
 ### Added
