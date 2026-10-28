@@ -8,6 +8,8 @@ this changelog highlights the changes relevant for overview and operations.
 
 ## [Unreleased]
 
+## [1.0.4] – 2026-10-28
+
 ### Security
 - Keycloak base image `quay.io/keycloak/keycloak:26.7.4` → `26.7.5` (release and image 2026-09-30): Keycloak
   security fixes of 26.7.5 and the libraries bcprov 1.86, netty-handler 4.1.138, freemarker 2.3.35 and
