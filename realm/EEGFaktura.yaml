@@ -172,6 +172,19 @@ clients:
           access.token.claim: "true"
           id.token.claim: "true"
           userinfo.token.claim: "true"
+      # Group-Memberships → access_groups (voller Pfad), wie in Prod (von Hand gesetzt 27.10.);
+      # energystore /query ist nur fuer /EEG_ADMIN und /EEG_OWNER (energystore 261025-ca1)
+      - name: Group Mappers
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        config:
+          claim.name: access_groups
+          full.path: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+          introspection.token.claim: "true"
+          lightweight.claim: "false"
 
   # Admin-Frontend: public. Braucht EXPLIZITEN Audience-Mapper, weil das
   # Scala/Pekko-Admin-Backend verify-token-audience=true den eigenen Client
