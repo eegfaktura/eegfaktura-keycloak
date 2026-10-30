@@ -8,6 +8,12 @@ this changelog highlights the changes relevant for overview and operations.
 
 ## [Unreleased]
 
+### Changed
+- **Realm config: the api client `at.ourproject.vfeeg.api` gets the group mapper** (`Group Mappers`,
+  `oidc-group-membership-mapper`, claim `access_groups`, full path, ID/access/userinfo/introspection token).
+  Production already has it (set by hand on 2026-10-27); this aligns realm-as-code, so dev and fresh installs
+  keep their API users. Needed by eegfaktura-energystore#101 (`/query` for `/EEG_ADMIN` and `/EEG_OWNER` only).
+
 ### Security
 - **CI: the release workflow pins its actions by commit SHA** (eegfaktura-dev tracking W-261028-mm6). `rolling-release.yml`
   builds and pushes the shipped image, but used floating tags (`@v4`, `@v3`, …); a moved tag ran in the job that holds
