@@ -13,6 +13,10 @@ this changelog highlights the changes relevant for overview and operations.
   `oidc-group-membership-mapper`, claim `access_groups`, full path, ID/access/userinfo/introspection token).
   Production already has it (set by hand on 2026-10-27); this aligns realm-as-code, so dev and fresh installs
   keep their API users. Needed by eegfaktura-energystore#101 (`/query` for `/EEG_ADMIN` and `/EEG_OWNER` only).
+- **CI: no image build for a commit that only changes `CHANGELOG.md`** (platform#239): pushes and pull requests whose
+  only change is the CHANGELOG, such as the release PR, skip the image build and the checks (PR checks, security
+  scan, Snyk Code; the weekly schedules still run). Tag pushes still build. A release promotes
+  the image of the last commit before the release PR; it has the same content.
 
 ### Security
 - **CI: the release workflow pins its actions by commit SHA** (eegfaktura-dev tracking W-261028-mm6). `rolling-release.yml`
