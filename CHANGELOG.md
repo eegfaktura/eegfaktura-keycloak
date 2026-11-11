@@ -12,6 +12,29 @@ this changelog highlights the changes relevant for overview and operations.
 - Dependabot (Docker base images): no more major updates (legacy system, replaced by v3 in the medium term; majors
   only for security reasons, decision 23.10.2026), patch and minor updates come in one weekly grouped PR, new versions
   only after a 7-day cooldown. Security updates for the language ecosystems are unaffected.
+- **Realm config: the api client `at.ourproject.vfeeg.api` gets the group mapper** (`Group Mappers`,
+  `oidc-group-membership-mapper`, claim `access_groups`, full path, ID/access/userinfo/introspection token).
+  Production already has it (set by hand on 2026-10-27); this aligns realm-as-code, so dev and fresh installs
+  keep their API users. Needed by eegfaktura-energystore#101 (`/query` for `/EEG_ADMIN` and `/EEG_OWNER` only).
+- **CI: no image build for a commit that only changes `CHANGELOG.md`** (platform#239): pushes and pull requests whose
+  only change is the CHANGELOG, such as the release PR, skip the image build and the checks (PR checks, security
+  scan, Snyk Code; the weekly schedules still run). Tag pushes still build. A release promotes
+  the image of the last commit before the release PR; it has the same content.
+
+### Security
+- **CI: the release workflow pins its actions by commit SHA** (eegfaktura-dev tracking W-261028-mm6). `rolling-release.yml`
+  builds and pushes the shipped image, but used floating tags (`@v4`, `@v3`, …); a moved tag ran in the job that holds
+  the push credentials. Now every action is pinned to a commit, the same SHAs `pr-checks.yml` and `security-scan.yml` already
+  use where the action is the same, otherwise the commit the floating tag pointed to on 2026-10-28.
+
+## [1.0.4] – 2026-10-28
+
+### Security
+- Keycloak base image `quay.io/keycloak/keycloak:26.7.4` → `26.7.5` (release and image 2026-09-30): Keycloak
+  security fixes of 26.7.5 and the libraries bcprov 1.86, netty-handler 4.1.138, freemarker 2.3.35 and
+  jackson 2.21.7. Image scan (Trivy 0.75.0): 5 CRITICAL / 22 HIGH → 1 CRITICAL / 10 HIGH (the rest is in the
+  UBI base and in guava/mssql-jdbc). Realm file and theme unchanged; breaking changes of 26.7.5 (client policy
+  source groups by full path, disabled clients not in `aud`) do not touch `realm/EEGFaktura.yaml`.
 
 ## [1.0.3] – 2026-10-21
 
