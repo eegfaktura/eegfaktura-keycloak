@@ -9,6 +9,9 @@ this changelog highlights the changes relevant for overview and operations.
 ## [Unreleased]
 
 ### Changed
+- Dependabot (Docker base images): no more major updates (legacy system, replaced by v3 in the medium term; majors
+  only for security reasons, decision 23.10.2026), patch and minor updates come in one weekly grouped PR, new versions
+  only after a 7-day cooldown. Security updates for the language ecosystems are unaffected.
 - **Realm config: the api client `at.ourproject.vfeeg.api` gets the group mapper** (`Group Mappers`,
   `oidc-group-membership-mapper`, claim `access_groups`, full path, ID/access/userinfo/introspection token).
   Production already has it (set by hand on 2026-10-27); this aligns realm-as-code, so dev and fresh installs
